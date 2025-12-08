@@ -100,10 +100,11 @@ export class TCS3000 extends BaseDispenser {
 		debugLog('PRODUCT_ID: %d', productId);
 		// Parse the product ID string into a base-10 integer
 
-		const parsedProductId = productId ?? this.options.tcsProductId ?? 1015;
+		const parsedProductId = productId || this.options.tcsProductId || 1015;
 
 		// Validate the parsed product ID
 		if (isNaN(parsedProductId) || parsedProductId < 1001 || parsedProductId > 9998) {
+			debugLog('Invalid product ID: ${this.options.tcsProductId}. Must be a number between 1001 and 9998');
 			throw new Error(`Invalid product ID: ${this.options.tcsProductId}. Must be a number between 1001 and 9998.`);
 		}
 
