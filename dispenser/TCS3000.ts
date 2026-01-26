@@ -21,6 +21,9 @@ export class TCS3000 extends BaseDispenser {
 	private clear_sale = Buffer.from([0x7e, 0x01, 0x00, 0x20, 0x3e, 0x00, 0x23]);
 	private suspend_sale = Buffer.from([0x7e, 0x01, 0x00, 0x20, 0x39, 0x00, 0x4d]);
 	private resume_sale = Buffer.from([0x7e, 0x01, 0x00, 0x20, 0x3a, 0x00, 0x18]);
+	private switch_remote = Buffer.from([0x7e, 0x01, 0x00, 0x20, 0xF4, 0x01, 0x02, 0x80]);
+	private switch_local = Buffer.from([0x7e, 0x01, 0x00, 0x20, 0xF4, 0x01, 0x01, 0x62]);
+	
 
 	private crc_array: number[] = [
 		0, 94, 188, 226, 97, 63, 221, 131, 194, 156, 126, 32, 163, 253, 31, 65, 157, 195, 33, 127, 252, 162, 64, 30, 95, 1, 227, 189, 62,
@@ -176,6 +179,18 @@ export class TCS3000 extends BaseDispenser {
 	async clearSale() {
 		debugLog('clearSale', 'Clear_Sale');
 		await this.write(this.clear_sale, 'clearSale');
+		return await this.dispenserResponse();
+	}
+
+	async switchToRemote() {
+		debugLog('switchToRemote', 'Switch_Remote');
+		await this.write(this.switch_remote, 'switchToRemote');
+		return await this.dispenserResponse();
+	}
+
+	async switchToLocal() {
+		debugLog('switchToRemote', 'Switch_Local');
+		await this.write(this.switch_local, 'switchToLocal');
 		return await this.dispenserResponse();
 	}
 
