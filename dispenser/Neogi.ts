@@ -7,16 +7,25 @@ const debugLog = debug('dispenser:Neogi');
 export class Neogi extends BaseDispenser {
 	/**
 	 * Calculate checksum for Neogi protocol
-	 * Sum of ASCII character codes mod 100 (last 2 DECIMAL digits)
+	 * Sum of ASCII character codes, take last 2 DECIMAL digits
 	 * Example: sum=1240 → checksum="40"
 	 */
 	calculateChecksum(data: string): string {
 		let sum = 0;
+		debugLog('calculateChecksum - input: "%s" (length: %d)', data, data.length);
+
 		for (let i = 0; i < data.length; i++) {
-			sum += data.charCodeAt(i);
+			const char = data[i];
+			const code = data.charCodeAt(i);
+			sum += code;
+			debugLog('  [%d] "%s" = %d, sum = %d', i, char, code, sum);
 		}
-		// Protocol uses last 2 decimal digits (mod 100), NOT hex!
-		return (sum % 100).toString(10).padStart(2, '0');
+
+		debugLog('calculateChecksum - total sum: %d', sum);
+		const checksum = (sum % 100).toString(10).padStart(2, '0');
+		debugLog('calculateChecksum - checksum (last 2 digits): %s', checksum);
+
+		return checksum;
 	}
 
 	/**
@@ -52,8 +61,19 @@ export class Neogi extends BaseDispenser {
 		const checksum = match[2];
 
 		// Validate checksum for data replies
-		const calculatedChecksum = this.calculateChecksum(content);
+		// IMPORTANT: Include the closing '#' in checksum calculation
+		// Protocol: checksum from first char after opening '#' up to and including closing '#'
+		const contentWithHash = content + '#';
+		const calculatedChecksum = this.calculateChecksum(contentWithHash);
+
 		if (calculatedChecksum !== checksum) {
+			debugLog(
+				'CHECKSUM MISMATCH! Content: "%s", With hash: "%s", Calculated: %s, Expected: %s',
+				content,
+				contentWithHash,
+				calculatedChecksum,
+				checksum
+			);
 			throw new Error(
 				`Checksum validation failed. Expected: ${calculatedChecksum}, Got: ${checksum}, Content: ${content}`
 			);
@@ -87,20 +107,25 @@ export class Neogi extends BaseDispenser {
 	}
 
 	/**
-	 * Build preset command: #SL<8-digit value><vehicle no>#<checksum>%
-	 * @param value Volume in liters (will be converted to format 00001050 for 10.50L)
-	 * @param vehicleNo Optional 12-character vehicle number
+	 * Build preset command: #SL<volume>$<mode><vehicle_no>#<checksum>%
+	 * @param value Volume in liters (e.g., 10.50)
+	 * @param vehicleNo Optional 10-character vehicle number (e.g., "WB99AB0012")
+	 * @param mode Receipt mode: '*' (no receipt), '$' (receipt), '@' (receipt+keypad vehicle), '#' (no receipt+keypad vehicle)
 	 */
-	buildPresetCommand(value: number, vehicleNo?: string): string {
-		// Convert to 8 digits with 2 decimal places (multiply by 100)
-		const volumeValue = Math.floor(value * 100);
-		const paddedValue = volumeValue.toString().padStart(8, '0');
+	buildPresetCommand(value: number, vehicleNo?: string, mode: string = '*'): string {
+		// Format volume as 7 chars with decimal: XXXX.XX (e.g., "0010.50")
+		const volumeStr = value.toFixed(2).padStart(7, '0');
 
-		// Vehicle number is optional, default to spaces if not provided
-		const vehicle = vehicleNo ? vehicleNo.padEnd(12, ' ').substring(0, 12) : '            ';
+		// Vehicle number: 10 chars (pad with spaces if shorter)
+		const vehicle = vehicleNo ? vehicleNo.padEnd(10, ' ').substring(0, 10) : '          ';
+
+		// Build: SL + volume + $ + mode + vehicle
+		// Example: SL0010.50$*WB99AB0012
+		const data = `SL${volumeStr}$${mode}${vehicle}`;
+
+		debugLog('buildPresetCommand - volume: %s, data: "%s"', volumeStr, data);
 
 		// Category 2 command - wrap with checksum
-		const data = `SL${paddedValue}${vehicle}`;
 		return this.buildCommandWithChecksum(data);
 	}
 
@@ -165,6 +190,13 @@ export class Neogi extends BaseDispenser {
 		debugLog('readSale');
 		const cmd = this.buildCommand('LT');
 		await this.write(cmd, 'readSale');
+		return await this.dispenserResponse();
+	}
+
+	async readRunningVolume() {
+		debugLog('readRunningVolume');
+		const cmd = this.buildCommand('RV');
+		await this.write(cmd, 'readRunningVolume');
 		return await this.dispenserResponse();
 	}
 
@@ -268,20 +300,51 @@ export class Neogi extends BaseDispenser {
 		throw new Error(`Command failed: ${ascii}`);
 	}
 
+	processRunningVolume(res: string): { volume: number; litersPerMinute: number } {
+		debugLog('processRunningVolume - res: %s', res);
+		const parsed = this.parseResponse(res);
+
+		// RV response format: #RV0012.08#67%
+		// Data: 7 chars with decimal XXXX.XX
+		const volume = parseFloat(parsed.data.trim());
+
+		debugLog('processRunningVolume: %s liters', volume);
+		return {
+			volume: volume,
+			litersPerMinute: 0 // Not provided by protocol
+		};
+	}
+
 	processReadSale(res: string) {
 		debugLog('processReadSale - res: %s', res);
 		const parsed = this.parseResponse(res);
 
-		// LT response is 190 characters with transaction data
-		// Format: volume, amount, etc. (specific parsing depends on actual format)
+		// LT response is 190 characters with & delimited fields
+		// Format: #LT<serial>&<txn>&<fuel>&<density>&<nozzle>&<emp>&<date>&<time>&<price>&<rate>&<volume>&<vol_tot>&<amt_tot>&<rfid_emp>&<rfid_noz>&<vehicle>&<lat>&<long>&<reserved>#<checksum>%
 		const data = parsed.data;
+		const fields = data.split('&');
 
-		// Parse based on fixed positions (adjust based on actual protocol spec)
+		// Parse all fields according to protocol spec
 		const returnObj = {
-			volume: data.substring(0, 10).trim(),
-			amount: data.substring(10, 20).trim(),
-			unitPrice: data.substring(20, 30).trim(),
-			// Add more fields as needed based on actual 190-char format
+			serialNumber: fields[0] || '',
+			transactionNumber: fields[1] || '',
+			fuelType: fields[2] || '',
+			density: fields[3] || '',
+			nozzle: fields[4] || '',
+			employeeId: fields[5] || '',
+			date: fields[6] || '',
+			time: fields[7] || '',
+			price: parseFloat(fields[8]) || 0,
+			rate: parseFloat(fields[9]) || 0,
+			volume: parseFloat(fields[10]) || 0,
+			volumeTotalizer: parseFloat(fields[11]) || 0,
+			amountTotalizer: parseFloat(fields[12]) || 0,
+			rfidEmployee: fields[13] || '',
+			rfidNozzle: fields[14] || '',
+			vehicleNumber: fields[15] || '',
+			latitude: fields[16] || '',
+			longitude: fields[17] || '',
+			reserved: fields[18] || ''
 		};
 
 		debugLog('processReadSale: %o', returnObj);
@@ -342,6 +405,28 @@ export class Neogi extends BaseDispenser {
 		const status = this.processStatus(res);
 		const result = status.state === 'IDLE';
 		debugLog('isSaleCloseable: %s', result);
+		return result;
+	}
+
+	isOrderComplete(res: string, quantity: number): any {
+		debugLog('isOrderComplete - quantity: %s', quantity);
+
+		// Use running volume data from RV response
+		const volumeData = this.processRunningVolume(res);
+		const dispensed = volumeData.volume;
+
+		const percentage = (dispensed / quantity) * 100;
+
+		const result = {
+			status: dispensed >= quantity,
+			percentage: this.toFixedNumber(percentage, 2),
+			currentFlowRate: 0, // Not available from Neogi
+			averageFlowRate: 0, // Not available from Neogi
+			batchNumber: 0, // Not available from Neogi
+			dispensedQty: this.toFixedNumber(dispensed, 2)
+		};
+
+		debugLog('isOrderComplete: %o', result);
 		return result;
 	}
 
