@@ -73,6 +73,25 @@ export class Neogi extends BaseDispenser {
 		return `SL${paddedValue}${vehicle}\r`;
 	}
 
+	/**
+	 * Override write method to handle ASCII strings (not hex)
+	 * BaseDispenser.write() treats strings as hex, but Neogi uses ASCII
+	 */
+	protected async write(data: Buffer | string, _command?: string): Promise<boolean> {
+		let buffer: Buffer;
+
+		if (Buffer.isBuffer(data)) {
+			buffer = data;
+		} else {
+			// Convert ASCII string to Buffer (not hex!)
+			buffer = Buffer.from(data, 'ascii');
+		}
+
+		debugLog('write: %s bytes - %s', buffer.length, buffer.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n'));
+
+		return this.connection.write(buffer);
+	}
+
 	// ==================== COMMAND METHODS ====================
 
 	async totalizer() {
@@ -97,7 +116,7 @@ export class Neogi extends BaseDispenser {
 		return await this.dispenserResponse();
 	}
 
-	async setPreset(quantity: number, productId?: number) {
+	async setPreset(quantity: number, _productId?: number) {
 		debugLog('setPreset - quantity: %s', quantity);
 		const cmd = this.buildPresetCommand(quantity);
 		await this.write(cmd, 'setPreset');
