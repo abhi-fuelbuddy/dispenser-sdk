@@ -7,27 +7,43 @@ const debugLog = debug('dispenser:Neogi');
 export class Neogi extends BaseDispenser {
 	/**
 	 * Calculate checksum for Neogi protocol
-	 * Sum of ASCII character codes mod 256, converted to 2-digit hex
+	 * Sum of ASCII character codes mod 100 (last 2 DECIMAL digits)
+	 * Example: sum=1240 → checksum="40"
 	 */
 	calculateChecksum(data: string): string {
 		let sum = 0;
 		for (let i = 0; i < data.length; i++) {
 			sum += data.charCodeAt(i);
 		}
-		return (sum % 256).toString(16).toUpperCase().padStart(2, '0');
+		// Protocol uses last 2 decimal digits (mod 100), NOT hex!
+		return (sum % 100).toString(10).padStart(2, '0');
 	}
 
 	/**
-	 * Parse response in format: #<CMD><DATA>#<CHECKSUM>%
-	 * Validates checksum and returns parsed components
+	 * Parse response - handles TWO formats:
+	 * 1. Simple acks (NO checksum): #OK%, #STIDLE%, #STCALL%, #STDISP%, #INVALID%
+	 * 2. Data replies (WITH checksum): #VT0000004142.02#40%
 	 */
-	parseResponse(res: string): { command: string; data: string; checksum: string } {
+	parseResponse(res: string): { command: string; data: string; checksum?: string; isSimpleAck: boolean } {
 		// Convert hex to ASCII if needed
 		const ascii = res.startsWith('#') ? res : this.hex2a(res);
 		debugLog('parseResponse - ASCII: %s', ascii);
 
-		// Extract: #<CMD><DATA>#<CHECKSUM>%
-		const match = ascii.match(/#(.+?)#([0-9A-F]{2})%/);
+		// Check for simple ack format (no second '#')
+		if (!ascii.includes('#', 1)) {
+			const match = ascii.match(/#([A-Z0-9]+)%/);
+			if (match) {
+				debugLog('parseResponse - Simple ack detected: %s', match[1]);
+				return {
+					command: match[1].length >= 2 ? match[1].substring(0, 2) : match[1],
+					data: match[1].length > 2 ? match[1].substring(2) : '',
+					isSimpleAck: true
+				};
+			}
+		}
+
+		// Data reply format with checksum: #<CMD><DATA>#<CHECKSUM>%
+		const match = ascii.match(/#(.+?)#(\d{2})%/); // \d{2} for decimal digits
 		if (!match) {
 			throw new Error(`Invalid response format: ${ascii}`);
 		}
@@ -35,30 +51,43 @@ export class Neogi extends BaseDispenser {
 		const content = match[1];
 		const checksum = match[2];
 
-		// Validate checksum
+		// Validate checksum for data replies
 		const calculatedChecksum = this.calculateChecksum(content);
 		if (calculatedChecksum !== checksum) {
 			throw new Error(
-				`Checksum validation failed. Expected: ${calculatedChecksum}, Got: ${checksum}`
+				`Checksum validation failed. Expected: ${calculatedChecksum}, Got: ${checksum}, Content: ${content}`
 			);
 		}
 
+		debugLog('parseResponse - Data reply with valid checksum');
 		return {
 			command: content.substring(0, 2),
 			data: content.substring(2),
-			checksum
+			checksum,
+			isSimpleAck: false
 		};
 	}
 
 	/**
-	 * Build simple command with carriage return terminator
+	 * Build simple command with carriage return terminator (Category 1)
+	 * Used for: VT, ST, LT, RV, HS, DM, AM, TP, CT, etc.
 	 */
 	buildCommand(cmd: string): string {
 		return cmd + '\r';
 	}
 
 	/**
-	 * Build preset command: SL<8-digit value><vehicle no>
+	 * Build command with checksum wrapper (Category 2)
+	 * Format: #<data>#<checksum>%
+	 * Used for: SL, SR, SE, SK, SP, SM1, SM2, SV, SA
+	 */
+	buildCommandWithChecksum(data: string): string {
+		const checksum = this.calculateChecksum(data);
+		return `#${data}#${checksum}%`;
+	}
+
+	/**
+	 * Build preset command: #SL<8-digit value><vehicle no>#<checksum>%
 	 * @param value Volume in liters (will be converted to format 00001050 for 10.50L)
 	 * @param vehicleNo Optional 12-character vehicle number
 	 */
@@ -70,7 +99,9 @@ export class Neogi extends BaseDispenser {
 		// Vehicle number is optional, default to spaces if not provided
 		const vehicle = vehicleNo ? vehicleNo.padEnd(12, ' ').substring(0, 12) : '            ';
 
-		return `SL${paddedValue}${vehicle}\r`;
+		// Category 2 command - wrap with checksum
+		const data = `SL${paddedValue}${vehicle}`;
+		return this.buildCommandWithChecksum(data);
 	}
 
 	/**
