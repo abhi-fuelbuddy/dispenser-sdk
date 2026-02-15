@@ -164,14 +164,7 @@ export class Neogi extends BaseDispenser {
 		return await this.dispenserResponse();
 	}
 
-	async authorizeSale() {
-		debugLog('authorizeSale');
-		// DM = Disable Manual mode (switch to remote)
-		const cmd = this.buildCommand('DM');
-		await this.write(cmd, 'authorizeSale');
-		return await this.dispenserResponse();
-	}
-
+	// this commnad take care of authorization as well
 	async setPreset(quantity: number, _productId?: number) {
 		debugLog('setPreset - quantity: %s', quantity);
 		const cmd = this.buildPresetCommand(quantity);
