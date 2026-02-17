@@ -211,13 +211,8 @@ export class Neogi extends BaseDispenser {
 		debugLog('clearSale');
 		// First cancel transaction
 		const cancelCmd = this.buildCommand('CT');
-		await this.write(cancelCmd, 'clearSale:CT');
+		await this.write(cancelCmd, 'clearSale');
 		await this.dispenserResponse();
-
-		// Then enable manual mode
-		const manualCmd = this.buildCommand('AM');
-		await this.write(manualCmd, 'clearSale:AM');
-		return await this.dispenserResponse();
 	}
 
 	async switchToRemote() {
