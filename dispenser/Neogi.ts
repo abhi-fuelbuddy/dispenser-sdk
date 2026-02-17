@@ -46,7 +46,7 @@ export class Neogi extends BaseDispenser {
 				return {
 					command: match[1].length >= 2 ? match[1].substring(0, 2) : match[1],
 					data: match[1].length > 2 ? match[1].substring(2) : '',
-					isSimpleAck: true
+					isSimpleAck: true,
 				};
 			}
 		}
@@ -74,9 +74,7 @@ export class Neogi extends BaseDispenser {
 				calculatedChecksum,
 				checksum
 			);
-			throw new Error(
-				`Checksum validation failed. Expected: ${calculatedChecksum}, Got: ${checksum}, Content: ${content}`
-			);
+			throw new Error(`Checksum validation failed. Expected: ${calculatedChecksum}, Got: ${checksum}, Content: ${content}`);
 		}
 
 		debugLog('parseResponse - Data reply with valid checksum');
@@ -84,7 +82,7 @@ export class Neogi extends BaseDispenser {
 			command: content.substring(0, 2),
 			data: content.substring(2),
 			checksum,
-			isSimpleAck: false
+			isSimpleAck: false,
 		};
 	}
 
@@ -181,15 +179,8 @@ export class Neogi extends BaseDispenser {
 
 	async readSale() {
 		debugLog('readSale');
-		const cmd = this.buildCommand('LT');
-		await this.write(cmd, 'readSale');
-		return await this.dispenserResponse();
-	}
-
-	async readRunningVolume() {
-		debugLog('readRunningVolume');
 		const cmd = this.buildCommand('RV');
-		await this.write(cmd, 'readRunningVolume');
+		await this.write(cmd, 'readSale');
 		return await this.dispenserResponse();
 	}
 
@@ -293,7 +284,7 @@ export class Neogi extends BaseDispenser {
 		throw new Error(`Command failed: ${ascii}`);
 	}
 
-	processRunningVolume(res: string): { volume: number; litersPerMinute: number } {
+	processRunningVolume(res: string): { volume: number } {
 		debugLog('processRunningVolume - res: %s', res);
 		const parsed = this.parseResponse(res);
 
@@ -304,7 +295,6 @@ export class Neogi extends BaseDispenser {
 		debugLog('processRunningVolume: %s liters', volume);
 		return {
 			volume: volume,
-			litersPerMinute: 0 // Not provided by protocol
 		};
 	}
 
@@ -337,7 +327,7 @@ export class Neogi extends BaseDispenser {
 			vehicleNumber: fields[15] || '',
 			latitude: fields[16] || '',
 			longitude: fields[17] || '',
-			reserved: fields[18] || ''
+			reserved: fields[18] || '',
 		};
 
 		debugLog('processReadSale: %o', returnObj);
@@ -413,10 +403,7 @@ export class Neogi extends BaseDispenser {
 		const result = {
 			status: dispensed >= quantity,
 			percentage: this.toFixedNumber(percentage, 2),
-			currentFlowRate: 0, // Not available from Neogi
-			averageFlowRate: 0, // Not available from Neogi
-			batchNumber: 0, // Not available from Neogi
-			dispensedQty: this.toFixedNumber(dispensed, 2)
+			dispensedQty: this.toFixedNumber(dispensed, 2),
 		};
 
 		debugLog('isOrderComplete: %o', result);
