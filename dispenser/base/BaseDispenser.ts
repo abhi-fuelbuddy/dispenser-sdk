@@ -35,7 +35,7 @@ export class BaseDispenser implements IDispenser {
 		}
 	}
 
-	private async logDispenserMessage(
+	async logDispenserMessage(
 		messageType: 'sent' | 'received',
 		data: Buffer,
 		command?: string
