@@ -249,7 +249,6 @@ export class GateX extends ModBusDispenser {
 		};
 	}
 	printReceipt(printObj: any) {
-		const printWidth = 33;
 		const printArr = [];
 		debugLog('printReceipt: %o', printObj);
 
@@ -263,7 +262,7 @@ export class GateX extends ModBusDispenser {
 			printArr.push(...printFormat(printObj, 'PRINT COPY'));
 		}
 
-		const recieptString = `02303031313438313030303930${printArr.join('0A')}0A2020202020`;
+		const recieptString = `${printArr.join('0A')}0A1D564200`;
 		debugLog('printReceipt: %s', `${recieptString}`);
 		return this.printOrder(recieptString);
 	}

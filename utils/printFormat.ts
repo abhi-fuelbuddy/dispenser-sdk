@@ -122,6 +122,8 @@ export const orderSummaryFormat = (printObj: any) => {
 			printArr.push(str2hex(centerAlignValue(line, printWidth)));
 		});
 	}
+
+	printArr.push('0A');
 	if (printObj?.customerLocation) {
 		const wrappedLocation = wrapText('LOCATION: ' + printObj.customerLocation, printWidth);
 		wrappedLocation.forEach((line) => {
@@ -140,8 +142,6 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push(str2hex('CUSTOMER SIGN:'));
 	printArr.push('0A');
 	printArr.push(str2hex('_'.repeat(30)));
-	printArr.push('0A');
-	printArr.push('0A');
 	printArr.push('0A');
 	printArr.push('0A');
 	printArr.push('0A');
