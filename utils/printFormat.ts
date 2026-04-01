@@ -100,24 +100,28 @@ export const printFormat = (printObj: any, type: string) => {
 export const orderSummaryFormat = (printObj: any) => {
 	const printWidth = 40;
 	const printArr = [];
-	const LITERS_PER_IG = 4.546;
 
+	// Header
 	printArr.push(str2hex(centerAlignValue('****  ORDER SUMMARY  ****', printWidth)));
 	printArr.push('0A');
 	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', printWidth)));
 	printArr.push('0A');
+
+	// Truck, driver, date
 	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode, printWidth)));
-	printArr.push(str2hex(rightAlignValue('BOWSER No', printObj?.bowserNumber, printWidth)));
+	printArr.push(str2hex(rightAlignValue('TRUCK No', printObj?.bowserNumber, printWidth)));
+	printArr.push(str2hex(rightAlignValue('DRIVER', printObj?.driverName, printWidth)));
+	const dateStr = printObj?.orderDate ? new Date(printObj.orderDate).toLocaleDateString() : 'N/A';
+	printArr.push(str2hex(rightAlignValue('DATE', dateStr, printWidth)));
 	printArr.push('0A');
 
+	// Customer info
 	if (printObj?.customerName) {
 		const wrappedName = wrapText(printObj.customerName, printWidth);
 		wrappedName.forEach((line) => {
 			printArr.push(str2hex(centerAlignValue(line, printWidth)));
 		});
 	}
-	printArr.push('0A');
-
 	if (printObj?.customerLocation) {
 		const wrappedLocation = wrapText('LOCATION: ' + printObj.customerLocation, printWidth);
 		wrappedLocation.forEach((line) => {
@@ -126,22 +130,33 @@ export const orderSummaryFormat = (printObj: any) => {
 	}
 	printArr.push('0A');
 
+	// Product & quantities
 	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, printWidth)));
+	printArr.push(str2hex(rightAlignValue('REQUIRED QTY (L)', Number(printObj?.requiredQtyLiters || 0).toFixed(2), printWidth)));
+	printArr.push(str2hex(rightAlignValue('DELIVERED QTY (L)', Number(printObj?.deliveredQtyLiters || 0).toFixed(2), printWidth)));
 	printArr.push('0A');
 
-	const reqL = Number(printObj?.requiredQtyLiters || 0).toFixed(2);
-	const reqIG = (Number(printObj?.requiredQtyLiters || 0) / LITERS_PER_IG).toFixed(2);
-	const delL = Number(printObj?.deliveredQtyLiters || 0).toFixed(2);
-	const delIG = (Number(printObj?.deliveredQtyLiters || 0) / LITERS_PER_IG).toFixed(2);
-
-	printArr.push(str2hex(rightAlignValue('REQUIRED QTY (L)', reqL, printWidth)));
-	printArr.push(str2hex(rightAlignValue('REQUIRED QTY (IG)', reqIG, printWidth)));
-	printArr.push(str2hex(rightAlignValue('DELIVERED QTY (L)', delL, printWidth)));
-	printArr.push(str2hex(rightAlignValue('DELIVERED QTY (IG)', delIG, printWidth)));
+	// Customer signature / stamp space
+	printArr.push(str2hex('CUSTOMER SIGN:'));
+	printArr.push('0A');
+	printArr.push(str2hex('_'.repeat(30)));
+	printArr.push('0A');
+	printArr.push('0A');
+	printArr.push('0A');
+	printArr.push('0A');
+	printArr.push('0A');
 	printArr.push('0A');
 
-	const dateStr = printObj?.orderDate ? new Date(printObj.orderDate).toLocaleDateString() : 'N/A';
-	printArr.push(str2hex(rightAlignValue('DATE', dateStr, printWidth)));
+
+	// Driver signature space
+	printArr.push(str2hex('DRIVER SIGN:'));
+	printArr.push('0A');
+	printArr.push(str2hex('_'.repeat(30)));
+	printArr.push('0A');
+	printArr.push('0A');
+	printArr.push('0A');
+	printArr.push('0A');
+
 
 	return printArr;
 };
