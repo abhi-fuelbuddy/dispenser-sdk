@@ -2,7 +2,7 @@
 
 import debug from 'debug';
 import { BaseDispenser } from './base/BaseDispenser';
-import { printFormat } from '../utils/printFormat';
+import { printFormat, orderSummaryFormat } from '../utils/printFormat';
 const debugLog = debug('dispenser:isoil-vega-t-v10');
 export class IsoilVegaTVersion10 extends BaseDispenser {
 	private totalizerBuffer = Buffer.from([
@@ -681,18 +681,19 @@ export class IsoilVegaTVersion10 extends BaseDispenser {
 	printReceipt(printObj: any) {
 		const printWidth = 33;
 		const printArr = [];
-
 		debugLog('printReceipt: %o', printObj);
 
-		if (printObj?.isReceiptRequired) {
-			printArr.push(...printFormat(printObj, 'DISPENSING SLIP'));
-			printArr.push('0A1D564100');
+		if (printObj?.formatType === 'ORDER_SUMMARY') {
+			printArr.push(...orderSummaryFormat(printObj));
+		} else {
+			if (printObj?.isReceiptRequired) {
+				printArr.push(...printFormat(printObj, 'DISPENSING SLIP'));
+				printArr.push('0A1D564100');
+			}
+			printArr.push(...printFormat(printObj, 'PRINT COPY'));
 		}
 
-		printArr.push(...printFormat(printObj, 'PRINT COPY'));
-
 		const recieptString = `02303031313438313030303930${printArr.join('0A')}0A2020202020`;
-
 		debugLog('printReceipt: %s', `${recieptString}`);
 		return this.printOrder(recieptString);
 	}

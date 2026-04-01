@@ -96,3 +96,52 @@ export const printFormat = (printObj: any, type: string) => {
 
 	return printArr;
 };
+
+export const orderSummaryFormat = (printObj: any) => {
+	const printWidth = 40;
+	const printArr = [];
+	const LITERS_PER_IG = 4.546;
+
+	printArr.push(str2hex(centerAlignValue('****  ORDER SUMMARY  ****', printWidth)));
+	printArr.push('0A');
+	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', printWidth)));
+	printArr.push('0A');
+	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode, printWidth)));
+	printArr.push(str2hex(rightAlignValue('BOWSER No', printObj?.bowserNumber, printWidth)));
+	printArr.push('0A');
+
+	if (printObj?.customerName) {
+		const wrappedName = wrapText(printObj.customerName, printWidth);
+		wrappedName.forEach((line) => {
+			printArr.push(str2hex(centerAlignValue(line, printWidth)));
+		});
+	}
+	printArr.push('0A');
+
+	if (printObj?.customerLocation) {
+		const wrappedLocation = wrapText('LOCATION: ' + printObj.customerLocation, printWidth);
+		wrappedLocation.forEach((line) => {
+			printArr.push(str2hex(line));
+		});
+	}
+	printArr.push('0A');
+
+	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, printWidth)));
+	printArr.push('0A');
+
+	const reqL = Number(printObj?.requiredQtyLiters || 0).toFixed(2);
+	const reqIG = (Number(printObj?.requiredQtyLiters || 0) / LITERS_PER_IG).toFixed(2);
+	const delL = Number(printObj?.deliveredQtyLiters || 0).toFixed(2);
+	const delIG = (Number(printObj?.deliveredQtyLiters || 0) / LITERS_PER_IG).toFixed(2);
+
+	printArr.push(str2hex(rightAlignValue('REQUIRED QTY (L)', reqL, printWidth)));
+	printArr.push(str2hex(rightAlignValue('REQUIRED QTY (IG)', reqIG, printWidth)));
+	printArr.push(str2hex(rightAlignValue('DELIVERED QTY (L)', delL, printWidth)));
+	printArr.push(str2hex(rightAlignValue('DELIVERED QTY (IG)', delIG, printWidth)));
+	printArr.push('0A');
+
+	const dateStr = printObj?.orderDate ? new Date(printObj.orderDate).toLocaleDateString() : 'N/A';
+	printArr.push(str2hex(rightAlignValue('DATE', dateStr, printWidth)));
+
+	return printArr;
+};
