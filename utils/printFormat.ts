@@ -154,4 +154,4 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push('0A');
 
 	return printArr;
-};;;
+}
