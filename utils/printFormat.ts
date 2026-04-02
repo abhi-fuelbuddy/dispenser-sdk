@@ -138,6 +138,10 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
 	printArr.push('0A');
 	printArr.push('0A');
@@ -146,6 +150,10 @@ export const orderSummaryFormat = (printObj: any) => {
 	// Driver signature box
 	printArr.push(str2hex('DRIVER SIGN:'));
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
