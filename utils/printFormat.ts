@@ -103,9 +103,7 @@ export const orderSummaryFormat = (printObj: any) => {
 
 	// Header
 	printArr.push(str2hex(centerAlignValue('****  ORDER SUMMARY  ****', printWidth)));
-	printArr.push('0A');
 	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', printWidth)));
-	printArr.push('0A');
 
 	// Truck, driver, date
 	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode, printWidth)));
@@ -123,40 +121,37 @@ export const orderSummaryFormat = (printObj: any) => {
 		});
 	}
 
-	printArr.push('0A');
 	if (printObj?.customerLocation) {
 		const wrappedLocation = wrapText('LOCATION: ' + printObj.customerLocation, printWidth);
 		wrappedLocation.forEach((line) => {
 			printArr.push(str2hex(line));
 		});
 	}
-	printArr.push('0A');
 
 	// Product & quantities
 	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, printWidth)));
 	printArr.push(str2hex(rightAlignValue('REQUIRED QTY (L)', Number(printObj?.requiredQtyLiters || 0).toFixed(2), printWidth)));
 	printArr.push(str2hex(rightAlignValue('DELIVERED QTY (L)', Number(printObj?.deliveredQtyLiters || 0).toFixed(2), printWidth)));
-	printArr.push('0A');
 
-	// Customer signature / stamp space
+	// Customer signature box
 	printArr.push(str2hex('CUSTOMER SIGN:'));
-	printArr.push('0A');
-	printArr.push(str2hex('_'.repeat(30)));
-	printArr.push('0A');
+	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
 	printArr.push('0A');
 	printArr.push('0A');
 	printArr.push('0A');
 
-
-	// Driver signature space
+	// Driver signature box
 	printArr.push(str2hex('DRIVER SIGN:'));
+	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
 	printArr.push('0A');
-	printArr.push(str2hex('_'.repeat(30)));
 	printArr.push('0A');
 	printArr.push('0A');
-	printArr.push('0A');
-	printArr.push('0A');
-
 
 	return printArr;
-};
+};;;
