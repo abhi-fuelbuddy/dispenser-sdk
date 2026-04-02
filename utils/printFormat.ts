@@ -142,9 +142,8 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-	printArr.push('0A');
-	printArr.push('0A');
 	printArr.push('0A');
 
 	// Driver signature box
@@ -156,10 +155,8 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
 	printArr.push('0A');
-	printArr.push('0A');
-	printArr.push('0A');
-
 	return printArr;
 }
