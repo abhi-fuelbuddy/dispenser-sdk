@@ -3,7 +3,7 @@ import { BaseDispenser } from './base/BaseDispenser';
 import { AutoDetectTypes } from '@serialport/bindings-cpp';
 import { SerialPort } from 'serialport';
 import { DispenserOptions } from '../main';
-import { printFormat, orderSummaryFormat } from '../utils/printFormat';
+import { printFormat, orderSummaryFormat, deliverySlipDetailedFormat } from '../utils/printFormat';
 
 const debugLog = debug('dispenser:tcs3000');
 export class TCS3000 extends BaseDispenser {
@@ -461,6 +461,8 @@ export class TCS3000 extends BaseDispenser {
 
 		if (printObj?.formatType === 'ORDER_SUMMARY') {
 			printArr.push(...orderSummaryFormat(printObj));
+		} else if (printObj?.formatType === 'DELIVERY_SLIP_DETAILED') {
+			printArr.push(...deliverySlipDetailedFormat(printObj));
 		} else {
 			if (printObj?.isReceiptRequired) {
 				printArr.push(...printFormat(printObj, 'DISPENSING SLIP'));

@@ -2,7 +2,7 @@
 
 import debug from 'debug';
 import { BaseDispenser } from './base/BaseDispenser';
-import { printFormat, orderSummaryFormat } from '../utils/printFormat';
+import { printFormat, orderSummaryFormat, deliverySlipDetailedFormat } from '../utils/printFormat';
 const debugLog = debug('dispenser:isoil-vega-t-v10');
 export class IsoilVegaTVersion10 extends BaseDispenser {
 	private totalizerBuffer = Buffer.from([
@@ -685,6 +685,8 @@ export class IsoilVegaTVersion10 extends BaseDispenser {
 
 		if (printObj?.formatType === 'ORDER_SUMMARY') {
 			printArr.push(...orderSummaryFormat(printObj));
+		} else if (printObj?.formatType === 'DELIVERY_SLIP_DETAILED') {
+			printArr.push(...deliverySlipDetailedFormat(printObj));
 		} else {
 			if (printObj?.isReceiptRequired) {
 				printArr.push(...printFormat(printObj, 'DISPENSING SLIP'));

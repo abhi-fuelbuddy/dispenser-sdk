@@ -145,6 +145,18 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
 
+	// Customer stamp box
+	printArr.push(str2hex('CUSTOMER STAMP:'));
+	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+
 	// Driver signature box
 	printArr.push(str2hex('DRIVER SIGN:'));
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
@@ -158,3 +170,66 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
 	return printArr;
 }
+
+export const deliverySlipDetailedFormat = (printObj: any): string[] => {
+	const printWidth = 40;
+	const printArr: string[] = [];
+
+	// Header
+	printArr.push(str2hex(centerAlignValue('****  Dispensing SLIP  ****', printWidth)));
+	printArr.push('0A');
+	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', printWidth)));
+	printArr.push('0A');
+
+	// Truck / driver / slip
+	printArr.push(str2hex(rightAlignValue('BOWSER No', printObj?.vehicleRegistrationNumber || 'N/A', printWidth)));
+	printArr.push(str2hex(rightAlignValue('DRIVER No', printObj?.driverCode || 'N/A', printWidth)));
+	printArr.push('0A');
+
+	// Customer name (centered, wrapped)
+	const customerName = printObj?.customerName || 'N/A';
+	const wrappedName = wrapText(customerName, printWidth);
+	wrappedName.forEach((line) => {
+		printArr.push(str2hex(centerAlignValue(line, printWidth)));
+	});
+	printArr.push('0A');
+
+	// Order number
+	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode || 'N/A', printWidth)));
+	printArr.push('0A');
+
+	// Assets
+	const assets: Array<{ registrationNumber: string; startTime: string; endTime: string; quantity: string | number }> =
+		printObj?.assets || [];
+
+	for (const asset of assets) {
+		printArr.push(str2hex(centerAlignValue('Asset no.    ' + (asset.registrationNumber || 'N/A'), printWidth)));
+		// Column header: "Start time    End time      Quantity"
+		const colHeader = 'Start time    End time      Quantity';
+		printArr.push(str2hex(colHeader));
+		// Data row — fixed-width columns matching the header
+		const startTime = (asset.startTime ? new Date(asset.startTime).toLocaleTimeString() : 'N/A').padStart(10);
+		const endTime = (asset.endTime ? new Date(asset.endTime).toLocaleTimeString() : 'N/A').padStart(14);
+		const quantity = (asset.quantity != null ? String(asset.quantity) : 'N/A').padStart(12);
+		printArr.push(str2hex(startTime + endTime + quantity));
+		printArr.push(str2hex('-'.repeat(40)));
+	}
+
+	printArr.push('0A');
+
+	// Signature / stamp boxes
+	const signatureBox = (label: string) => {
+		printArr.push(str2hex(label));
+		printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+		for (let i = 0; i < 7; i++) {
+			printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+		}
+		printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+	};
+
+	signatureBox('CUSTOMER SIGN:');
+	signatureBox('CUSTOMER STAMP:');
+	signatureBox('DRIVER SIGN:');
+
+	return printArr;
+};
