@@ -43,6 +43,15 @@ const centerAlignValue = (value: string, totalWidth: number) => {
 	return alignedString;
 };
 
+const signatureBox = (label: string, printArr: string[]) => {
+	printArr.push(str2hex(label));
+	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+	for (let i = 0; i < 7; i++) {
+		printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	}
+	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+};
+
 const wrapText = (text: string, maxWidth: number): string[] => {
 	const words = text.split(' ');
 	const lines: string[] = [];
@@ -133,41 +142,9 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push(str2hex(rightAlignValue('REQUIRED QTY (L)', Number(printObj?.requiredQtyLiters || 0).toFixed(2), printWidth)));
 	printArr.push(str2hex(rightAlignValue('DELIVERED QTY (L)', Number(printObj?.deliveredQtyLiters || 0).toFixed(2), printWidth)));
 
-	// Customer signature box
-	printArr.push(str2hex('CUSTOMER SIGN:'));
-	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-
-	// Customer stamp box
-	printArr.push(str2hex('CUSTOMER STAMP:'));
-	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-
-	// Driver signature box
-	printArr.push(str2hex('DRIVER SIGN:'));
-	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+	signatureBox('CUSTOMER SIGN:', printArr);
+	signatureBox('CUSTOMER STAMP:', printArr);
+	signatureBox('DRIVER SIGN:', printArr);
 	return printArr;
 }
 
@@ -217,19 +194,9 @@ export const deliverySlipDetailedFormat = (printObj: any): string[] => {
 
 	printArr.push('0A');
 
-	// Signature / stamp boxes
-	const signatureBox = (label: string) => {
-		printArr.push(str2hex(label));
-		printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-		for (let i = 0; i < 7; i++) {
-			printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
-		}
-		printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-	};
-
-	signatureBox('CUSTOMER SIGN:');
-	signatureBox('CUSTOMER STAMP:');
-	signatureBox('DRIVER SIGN:');
+	signatureBox('CUSTOMER SIGN:', printArr);
+	signatureBox('CUSTOMER STAMP:', printArr);
+	signatureBox('DRIVER SIGN:', printArr);
 
 	return printArr;
 };
