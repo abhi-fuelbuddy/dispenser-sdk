@@ -141,9 +141,12 @@ export const orderSummaryFormat = (printObj: any) => {
 	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, printWidth)));
 	printArr.push(str2hex(rightAlignValue('REQUIRED QTY (L)', Number(printObj?.requiredQtyLiters || 0).toFixed(2), printWidth)));
 	printArr.push(str2hex(rightAlignValue('DELIVERED QTY (L)', Number(printObj?.deliveredQtyLiters || 0).toFixed(2), printWidth)));
+	const timeStr = printObj?.closeTime ? new Date(printObj.closeTime).toLocaleTimeString() : 'N/A';
+	printArr.push(str2hex(rightAlignValue('TIME', timeStr, printWidth)));
+	printArr.push(str2hex(rightAlignValue('ASSETS', String(printObj?.assetsCount ?? 0), printWidth)));
+	printArr.push(str2hex(rightAlignValue('VOLUME', Number(printObj?.deliveredQtyLiters || 0).toFixed(2) + 'L', printWidth)));
 
 	signatureBox('CUSTOMER SIGN:', printArr);
-	signatureBox('CUSTOMER STAMP:', printArr);
 	signatureBox('DRIVER SIGN:', printArr);
 	return printArr;
 }
@@ -176,26 +179,28 @@ export const deliverySlipDetailedFormat = (printObj: any): string[] => {
 	printArr.push('0A');
 
 	// Assets
-	const assets: Array<{ registrationNumber: string; startTime: string; endTime: string; quantity: string | number }> =
+	const assets: Array<{ registrationNumber: string; endTime: string; quantity: string | number; odometerReading?: string }> =
 		printObj?.assets || [];
 
+	let totalQty = 0;
 	for (const asset of assets) {
-		printArr.push(str2hex(centerAlignValue('Asset no.    ' + (asset.registrationNumber || 'N/A'), printWidth)));
-		// Column header: "Start time    End time      Quantity"
-		const colHeader = 'Start time    End time      Quantity';
-		printArr.push(str2hex(colHeader));
-		// Data row — fixed-width columns matching the header
-		const startTime = (asset.startTime ? new Date(asset.startTime).toLocaleTimeString() : 'N/A').padStart(10);
-		const endTime = (asset.endTime ? new Date(asset.endTime).toLocaleTimeString() : 'N/A').padStart(14);
-		const quantity = (asset.quantity != null ? String(asset.quantity) : 'N/A').padStart(12);
-		printArr.push(str2hex(startTime + endTime + quantity));
+		printArr.push(str2hex(rightAlignValue('ASSET No', asset.registrationNumber || 'N/A', printWidth)));
+		printArr.push(str2hex(rightAlignValue('VOLUME', asset.quantity != null ? String(asset.quantity) + 'L' : 'N/A', printWidth)));
+		const endTime = asset.endTime ? new Date(asset.endTime).toLocaleTimeString() : 'N/A';
+		printArr.push(str2hex(rightAlignValue('TIME', endTime, printWidth)));
+		const dateStr = asset.endTime ? new Date(asset.endTime).toLocaleDateString() : 'N/A';
+		printArr.push(str2hex(rightAlignValue('DATE', dateStr, printWidth)));
+		if (asset.odometerReading) {
+			printArr.push(str2hex(rightAlignValue('ODOMETER', asset.odometerReading, printWidth)));
+		}
 		printArr.push(str2hex('-'.repeat(40)));
+		totalQty += Number(asset.quantity) || 0;
 	}
 
+	printArr.push(str2hex(rightAlignValue('TOTAL', totalQty.toFixed(2) + 'L', printWidth)));
 	printArr.push('0A');
 
 	signatureBox('CUSTOMER SIGN:', printArr);
-	signatureBox('CUSTOMER STAMP:', printArr);
 	signatureBox('DRIVER SIGN:', printArr);
 
 	return printArr;
