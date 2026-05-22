@@ -197,7 +197,8 @@ export const deliverySlipDetailedFormat = (printObj: any): string[] => {
 		totalQty += Number(asset.quantity) || 0;
 	}
 
-	printArr.push(str2hex(rightAlignValue('TOTAL', totalQty.toFixed(2) + 'L', printWidth)));
+	printArr.push(str2hex(rightAlignValue('TOTAL QTY DISPENSED', totalQty.toFixed(2) + 'L', printWidth)));
+	printArr.push(str2hex(rightAlignValue('TOTAL ASSETS', String(assets.length), printWidth)));
 	printArr.push('0A');
 
 	signatureBox('CUSTOMER SIGN:', printArr);
