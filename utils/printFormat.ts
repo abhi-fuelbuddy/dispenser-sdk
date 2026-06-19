@@ -139,8 +139,6 @@ export const orderSummaryFormat = (printObj: any) => {
 
 	// Product & quantities
 	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, printWidth)));
-	// printArr.push(str2hex(rightAlignValue('REQUIRED QTY (L)', Number(printObj?.requiredQtyLiters || 0).toFixed(2), printWidth)));
-	// printArr.push(str2hex(rightAlignValue('DELIVERED QTY (L)', Number(printObj?.deliveredQtyLiters || 0).toFixed(2), printWidth)));
 	const timeStr = printObj?.closeTime ? new Date(printObj.closeTime).toLocaleTimeString() : 'N/A';
 	printArr.push(str2hex(rightAlignValue('TIME', timeStr, printWidth)));
 	printArr.push(str2hex(rightAlignValue('ASSETS', String(printObj?.assetsCount ?? 0), printWidth)));
