@@ -22,7 +22,10 @@ const rightAlignValue = (label: string, valueStr: string, totalWidth: number) =>
 	const value = valueStr ? valueStr + '' : 'N/A';
 	const labelWidth = label.length;
 	const valueWidth = value.length;
-	const spacesToAdd = totalWidth - labelWidth - valueWidth;
+	// Asset descriptions and organisation names can be wider than the slip. Keep a
+	// single separating space and let the printer wrap, rather than throwing on a
+	// negative repeat count — and never truncate, slips settle billing disputes.
+	const spacesToAdd = Math.max(totalWidth - labelWidth - valueWidth, 1);
 
 	const alignedString = label + ' '.repeat(spacesToAdd) + value;
 	return alignedString;
@@ -35,7 +38,7 @@ const rightAlignValue = (label: string, valueStr: string, totalWidth: number) =>
  */
 const centerAlignValue = (value: string, totalWidth: number) => {
 	const valueWidth = value.length;
-	const spacesToAdd = totalWidth - valueWidth;
+	const spacesToAdd = Math.max(totalWidth - valueWidth, 0);
 	const leftSpaces = Math.floor(spacesToAdd / 2);
 	const rightSpaces = spacesToAdd - leftSpaces;
 
@@ -60,10 +63,20 @@ const wrapText = (text: string, maxWidth: number): string[] => {
 	for (const word of words) {
 		if ((currentLine + (currentLine ? ' ' : '') + word).length <= maxWidth) {
 			currentLine += (currentLine ? ' ' : '') + word;
-		} else {
-			if (currentLine) lines.push(currentLine);
-			currentLine = word;
+			continue;
 		}
+		if (currentLine) {
+			lines.push(currentLine);
+			currentLine = '';
+		}
+		// A single word can be wider than the slip (an unbroken organisation name),
+		// so break it here instead of handing an oversized line to the aligners.
+		let rest = word;
+		while (rest.length > maxWidth) {
+			lines.push(rest.slice(0, maxWidth));
+			rest = rest.slice(maxWidth);
+		}
+		currentLine = rest;
 	}
 	if (currentLine) lines.push(currentLine);
 	return lines;
