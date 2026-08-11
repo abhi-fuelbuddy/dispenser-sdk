@@ -3,7 +3,7 @@ import { BaseDispenser } from './base/BaseDispenser';
 import { AutoDetectTypes } from '@serialport/bindings-cpp';
 import { SerialPort } from 'serialport';
 import { DispenserOptions } from '../main';
-import { printFormat, orderSummaryFormat, deliverySlipDetailedFormat } from '../utils/printFormat';
+import { FULL_CUT, LF, buildSlip } from '../utils/printFormat';
 
 const debugLog = debug('dispenser:tcs3000');
 export class TCS3000 extends BaseDispenser {
@@ -456,22 +456,9 @@ export class TCS3000 extends BaseDispenser {
 	}
 
 	printReceipt(printObj: any) {
-		const printArr = [];
 		debugLog('printReceipt: %o', printObj);
 
-		if (printObj?.formatType === 'ORDER_SUMMARY') {
-			printArr.push(...orderSummaryFormat(printObj));
-		} else if (printObj?.formatType === 'DELIVERY_SLIP_DETAILED') {
-			printArr.push(...deliverySlipDetailedFormat(printObj));
-		} else {
-			if (printObj?.isReceiptRequired) {
-				printArr.push(...printFormat(printObj, 'DISPENSING SLIP'));
-				printArr.push('0A1D564100');
-			}
-			printArr.push(...printFormat(printObj, 'PRINT COPY'));
-		}
-
-		const recieptString = `${printArr.join('0A')}0A1D564200`;
+		const recieptString = `${buildSlip(printObj).join(LF)}${FULL_CUT}`;
 		debugLog('printReceipt: %s', `${recieptString}`);
 		return this.printOrder(recieptString);
 	}

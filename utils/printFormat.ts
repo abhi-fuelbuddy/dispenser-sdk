@@ -1,3 +1,13 @@
+const PRINT_WIDTH = 40;
+const SIGNATURE_BOX_LINES = 7;
+
+/** Line feed. */
+export const LF = '0A';
+/** ESC/POS GS V A 0 — feed and partial cut, to tear the copies apart. */
+export const PARTIAL_CUT = '0A1D564100';
+/** ESC/POS GS V B 0 — feed and full cut, ends a slip. */
+export const FULL_CUT = '0A1D564200';
+
 /**
  * Convert String to HEX
  * @param num
@@ -20,15 +30,12 @@ const str2hex = (num: string) => {
  */
 const rightAlignValue = (label: string, valueStr: string, totalWidth: number) => {
 	const value = valueStr ? valueStr + '' : 'N/A';
-	const labelWidth = label.length;
-	const valueWidth = value.length;
 	// Asset descriptions and organisation names can be wider than the slip. Keep a
 	// single separating space and let the printer wrap, rather than throwing on a
 	// negative repeat count — and never truncate, slips settle billing disputes.
-	const spacesToAdd = Math.max(totalWidth - labelWidth - valueWidth, 1);
+	const spacesToAdd = Math.max(totalWidth - label.length - value.length, 1);
 
-	const alignedString = label + ' '.repeat(spacesToAdd) + value;
-	return alignedString;
+	return label + ' '.repeat(spacesToAdd) + value;
 };
 
 /**
@@ -37,22 +44,23 @@ const rightAlignValue = (label: string, valueStr: string, totalWidth: number) =>
  * @param totalWidth
  */
 const centerAlignValue = (value: string, totalWidth: number) => {
-	const valueWidth = value.length;
-	const spacesToAdd = Math.max(totalWidth - valueWidth, 0);
+	const spacesToAdd = Math.max(totalWidth - value.length, 0);
 	const leftSpaces = Math.floor(spacesToAdd / 2);
-	const rightSpaces = spacesToAdd - leftSpaces;
-
-	const alignedString = ' '.repeat(leftSpaces) + value + ' '.repeat(rightSpaces);
-	return alignedString;
+	return ' '.repeat(leftSpaces) + value + ' '.repeat(spacesToAdd - leftSpaces);
 };
 
 const signatureBox = (label: string, printArr: string[]) => {
 	printArr.push(str2hex(label));
-	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
-	for (let i = 0; i < 7; i++) {
-		printArr.push(str2hex('|' + ' '.repeat(38) + '|'));
+	printArr.push(str2hex('+' + '-'.repeat(PRINT_WIDTH - 2) + '+'));
+	for (let i = 0; i < SIGNATURE_BOX_LINES; i++) {
+		printArr.push(str2hex('|' + ' '.repeat(PRINT_WIDTH - 2) + '|'));
 	}
-	printArr.push(str2hex('+' + '-'.repeat(38) + '+'));
+	printArr.push(str2hex('+' + '-'.repeat(PRINT_WIDTH - 2) + '+'));
+};
+
+const signatureBoxes = (printArr: string[]) => {
+	signatureBox('CUSTOMER SIGN:', printArr);
+	signatureBox('DRIVER SIGN:', printArr);
 };
 
 const wrapText = (text: string, maxWidth: number): string[] => {
@@ -83,137 +91,149 @@ const wrapText = (text: string, maxWidth: number): string[] => {
 };
 
 export const printFormat = (printObj: any, type: string) => {
-	const printWidth = 40;
 	const printArr = [];
 
-	printArr.push(str2hex(centerAlignValue(`****  ${type}  ****`, printWidth)));
-	printArr.push('0A');
-	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', printWidth)));
-	printArr.push('0A');
-	printArr.push(str2hex(rightAlignValue('BOWSER No', printObj?.vehicleRegistrationNumber, printWidth)));
-	printArr.push(str2hex(rightAlignValue('DRIVER No', printObj?.driverCode, printWidth)));
-	printArr.push(str2hex(rightAlignValue('Slip No', printObj?.slipNumber, printWidth)));
-	printArr.push('0A');
+	printArr.push(str2hex(centerAlignValue(`****  ${type}  ****`, PRINT_WIDTH)));
+	printArr.push(LF);
+	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', PRINT_WIDTH)));
+	printArr.push(LF);
+	printArr.push(str2hex(rightAlignValue('BOWSER No', printObj?.vehicleRegistrationNumber, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('DRIVER No', printObj?.driverCode, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('Slip No', printObj?.slipNumber, PRINT_WIDTH)));
+	printArr.push(LF);
 	if (printObj?.customerName) {
-		const wrappedName = wrapText(printObj.customerName, printWidth);
-		wrappedName.forEach((line) => {
-			printArr.push(str2hex(centerAlignValue(line, printWidth)));
+		wrapText(printObj.customerName, PRINT_WIDTH).forEach((line) => {
+			printArr.push(str2hex(centerAlignValue(line, PRINT_WIDTH)));
 		});
 	}
-	printArr.push('0A');
-	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode, printWidth)));
-	printArr.push(str2hex(rightAlignValue('ASSET No', printObj?.registrationNumber, printWidth)));
-	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, printWidth)));
-	printArr.push(str2hex(rightAlignValue('DATE', new Date(printObj?.orderDate).toLocaleDateString(), printWidth)));
-	printArr.push(str2hex(rightAlignValue('START TIME', new Date(printObj?.startTime).toLocaleTimeString(), printWidth)));
-	printArr.push(str2hex(rightAlignValue('END TIME', new Date(printObj?.endTime).toLocaleTimeString(), printWidth)));
-	printArr.push('0A');
-	printArr.push(str2hex(rightAlignValue('GROSS VOLUME', printObj?.unitOfMeasure, printWidth)));
-	printArr.push(str2hex(rightAlignValue('QUANTITY', printObj?.quantity, printWidth)));
-	printArr.push(str2hex(rightAlignValue('START TOT.', printObj?.startTotalizer, printWidth)));
-	printArr.push(str2hex(rightAlignValue('END TOT.', printObj?.endTotalizer, printWidth)));
+	printArr.push(LF);
+	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('ASSET No', printObj?.registrationNumber, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('DATE', new Date(printObj?.orderDate).toLocaleDateString(), PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('START TIME', new Date(printObj?.startTime).toLocaleTimeString(), PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('END TIME', new Date(printObj?.endTime).toLocaleTimeString(), PRINT_WIDTH)));
+	printArr.push(LF);
+	printArr.push(str2hex(rightAlignValue('GROSS VOLUME', printObj?.unitOfMeasure, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('QUANTITY', printObj?.quantity, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('START TOT.', printObj?.startTotalizer, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('END TOT.', printObj?.endTotalizer, PRINT_WIDTH)));
 	if (printObj?.odometerReading) {
-		printArr.push(str2hex(rightAlignValue('ODOMETER', printObj?.odometerReading, printWidth)));
+		printArr.push(str2hex(rightAlignValue('ODOMETER', printObj?.odometerReading, PRINT_WIDTH)));
 	}
 
 	return printArr;
 };
 
 export const orderSummaryFormat = (printObj: any) => {
-	const printWidth = 40;
 	const printArr = [];
 
 	// Header
-	printArr.push(str2hex(centerAlignValue('****  ORDER SUMMARY  ****', printWidth)));
-	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', printWidth)));
+	printArr.push(str2hex(centerAlignValue('****  ORDER SUMMARY  ****', PRINT_WIDTH)));
+	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', PRINT_WIDTH)));
 
 	// Truck, driver, date
-	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode, printWidth)));
-	printArr.push(str2hex(rightAlignValue('TRUCK No', printObj?.bowserNumber, printWidth)));
-	printArr.push(str2hex(rightAlignValue('DRIVER', printObj?.driverName, printWidth)));
-	const dateStr = printObj?.orderDate ? new Date(printObj.orderDate).toLocaleDateString() : 'N/A';
-	printArr.push(str2hex(rightAlignValue('DATE', dateStr, printWidth)));
-	printArr.push('0A');
+	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('TRUCK No', printObj?.bowserNumber, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('DRIVER', printObj?.driverName, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('DATE', printObj?.orderDate ? new Date(printObj.orderDate).toLocaleDateString() : 'N/A', PRINT_WIDTH)));
+	printArr.push(LF);
 
 	// Customer info
 	if (printObj?.customerName) {
-		const wrappedName = wrapText(printObj.customerName, printWidth);
-		wrappedName.forEach((line) => {
-			printArr.push(str2hex(centerAlignValue(line, printWidth)));
+		wrapText(printObj.customerName, PRINT_WIDTH).forEach((line) => {
+			printArr.push(str2hex(centerAlignValue(line, PRINT_WIDTH)));
 		});
 	}
 
 	if (printObj?.customerLocation) {
-		const wrappedLocation = wrapText('LOCATION: ' + printObj.customerLocation, printWidth);
-		wrappedLocation.forEach((line) => {
+		wrapText('LOCATION: ' + printObj.customerLocation, PRINT_WIDTH).forEach((line) => {
 			printArr.push(str2hex(line));
 		});
 	}
 
 	// Product & quantities
-	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, printWidth)));
-	const timeStr = printObj?.closeTime ? new Date(printObj.closeTime).toLocaleTimeString() : 'N/A';
-	printArr.push(str2hex(rightAlignValue('TIME', timeStr, printWidth)));
-	printArr.push(str2hex(rightAlignValue('ASSETS', String(printObj?.assetsCount ?? 0), printWidth)));
-	printArr.push(str2hex(rightAlignValue('VOLUME', Number(printObj?.deliveredQtyLiters || 0).toFixed(2) + 'L', printWidth)));
+	printArr.push(str2hex(rightAlignValue('PRODUCT', printObj?.productName, PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('TIME', printObj?.closeTime ? new Date(printObj.closeTime).toLocaleTimeString() : 'N/A', PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('ASSETS', String(printObj?.assetsCount ?? 0), PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('VOLUME', Number(printObj?.deliveredQtyLiters || 0).toFixed(2) + 'L', PRINT_WIDTH)));
 
-	signatureBox('CUSTOMER SIGN:', printArr);
-	signatureBox('DRIVER SIGN:', printArr);
+	signatureBoxes(printArr);
 	return printArr;
 }
 
 export const deliverySlipDetailedFormat = (printObj: any): string[] => {
-	const printWidth = 40;
 	const printArr: string[] = [];
 
 	// Header
-	printArr.push(str2hex(centerAlignValue('****  Dispensing SLIP  ****', printWidth)));
-	printArr.push('0A');
-	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', printWidth)));
-	printArr.push('0A');
+	printArr.push(str2hex(centerAlignValue('****  Dispensing SLIP  ****', PRINT_WIDTH)));
+	printArr.push(LF);
+	printArr.push(str2hex(centerAlignValue('FUELBUDDY FUEL SUPPLY LLC', PRINT_WIDTH)));
+	printArr.push(LF);
 
 	// Truck / driver / slip
-	printArr.push(str2hex(rightAlignValue('BOWSER No', printObj?.vehicleRegistrationNumber || 'N/A', printWidth)));
-	printArr.push(str2hex(rightAlignValue('DRIVER No', printObj?.driverCode || 'N/A', printWidth)));
-	printArr.push('0A');
+	printArr.push(str2hex(rightAlignValue('BOWSER No', printObj?.vehicleRegistrationNumber || 'N/A', PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('DRIVER No', printObj?.driverCode || 'N/A', PRINT_WIDTH)));
+	printArr.push(LF);
 
 	// Customer name (centered, wrapped)
-	const customerName = printObj?.customerName || 'N/A';
-	const wrappedName = wrapText(customerName, printWidth);
-	wrappedName.forEach((line) => {
-		printArr.push(str2hex(centerAlignValue(line, printWidth)));
+	wrapText(printObj?.customerName || 'N/A', PRINT_WIDTH).forEach((line) => {
+		printArr.push(str2hex(centerAlignValue(line, PRINT_WIDTH)));
 	});
-	printArr.push('0A');
+	printArr.push(LF);
 
 	// Order number
-	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode || 'N/A', printWidth)));
-	printArr.push('0A');
+	printArr.push(str2hex(rightAlignValue('ORDER No', printObj?.orderCode || 'N/A', PRINT_WIDTH)));
+	printArr.push(LF);
 
 	// Assets
-	const assets: Array<{ registrationNumber: string; endTime: string; quantity: string | number; odometerReading?: string }> =
-		printObj?.assets || [];
+	const assets = printObj?.assets || [];
 
 	let totalQty = 0;
 	for (const asset of assets) {
-		printArr.push(str2hex(rightAlignValue('ASSET No', asset.registrationNumber || 'N/A', printWidth)));
-		printArr.push(str2hex(rightAlignValue('VOLUME', asset.quantity != null ? String(asset.quantity) + 'L' : 'N/A', printWidth)));
-		const endTime = asset.endTime ? new Date(asset.endTime).toLocaleTimeString() : 'N/A';
-		printArr.push(str2hex(rightAlignValue('TIME', endTime, printWidth)));
-		const dateStr = asset.endTime ? new Date(asset.endTime).toLocaleDateString() : 'N/A';
-		printArr.push(str2hex(rightAlignValue('DATE', dateStr, printWidth)));
+		printArr.push(str2hex(rightAlignValue('ASSET No', asset.registrationNumber || 'N/A', PRINT_WIDTH)));
+		printArr.push(str2hex(rightAlignValue('VOLUME', asset.quantity != null ? String(asset.quantity) + 'L' : 'N/A', PRINT_WIDTH)));
+		const at = asset.endTime ? new Date(asset.endTime) : null;
+		printArr.push(str2hex(rightAlignValue('TIME', at ? at.toLocaleTimeString() : 'N/A', PRINT_WIDTH)));
+		printArr.push(str2hex(rightAlignValue('DATE', at ? at.toLocaleDateString() : 'N/A', PRINT_WIDTH)));
 		if (asset.odometerReading) {
-			printArr.push(str2hex(rightAlignValue('ODOMETER', asset.odometerReading, printWidth)));
+			printArr.push(str2hex(rightAlignValue('ODOMETER', asset.odometerReading, PRINT_WIDTH)));
 		}
-		printArr.push(str2hex('-'.repeat(40)));
+		printArr.push(str2hex('-'.repeat(PRINT_WIDTH)));
 		totalQty += Number(asset.quantity) || 0;
 	}
 
-	printArr.push(str2hex(rightAlignValue('TOTAL QTY DISPENSED', totalQty.toFixed(2) + 'L', printWidth)));
-	printArr.push(str2hex(rightAlignValue('TOTAL ASSETS', String(assets.length), printWidth)));
-	printArr.push('0A');
+	printArr.push(str2hex(rightAlignValue('TOTAL QTY DISPENSED', totalQty.toFixed(2) + 'L', PRINT_WIDTH)));
+	printArr.push(str2hex(rightAlignValue('TOTAL ASSETS', String(assets.length), PRINT_WIDTH)));
+	printArr.push(LF);
 
-	signatureBox('CUSTOMER SIGN:', printArr);
-	signatureBox('DRIVER SIGN:', printArr);
+	signatureBoxes(printArr);
 
 	return printArr;
+};
+
+/**
+ * Picks the slip layout for a print object. Every dispenser chose it the same way,
+ * so it lives here; each dispenser only owns its own framing bytes.
+ */
+export const buildSlip = (printObj: any): string[] => {
+	switch (printObj?.formatType) {
+		case 'ORDER_SUMMARY':
+			return orderSummaryFormat(printObj);
+
+		case 'DELIVERY_SLIP_DETAILED':
+			return deliverySlipDetailedFormat(printObj);
+
+		// The original per-asset slip: a signed copy for the customer when the order
+		// asked for a receipt, then the driver's copy, cut apart by 0A1D564100.
+		default: {
+			const printArr: string[] = [];
+			if (printObj?.isReceiptRequired) {
+				printArr.push(...printFormat(printObj, 'DISPENSING SLIP'));
+				printArr.push(PARTIAL_CUT);
+			}
+			printArr.push(...printFormat(printObj, 'PRINT COPY'));
+			return printArr;
+		}
+	}
 };
