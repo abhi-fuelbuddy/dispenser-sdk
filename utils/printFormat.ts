@@ -60,31 +60,21 @@ const signatureBoxes = (printArr: string[], printWidth: number, signatureBoxLine
 	signatureBox('DRIVER SIGN:', printArr, printWidth, signatureBoxLines);
 };
 
+/**
+ * Break text into slip-width lines at the last space that fits. A word wider than
+ * the slip (an unbroken organisation name) has no space to break on, so it is cut
+ * mid-word — the aligners must never receive a line wider than the slip.
+ */
 const wrapText = (text: string, maxWidth: number): string[] => {
-	const words = text.split(' ');
-	const lines: string[] = [];
-	let currentLine = '';
+	// Not trimStart(): only spaces separate words on a slip, so a tab or newline is
+	// content. Dropping them here also swallows the run of spaces a cut landed in.
+	const remaining = text.replace(/^ +/, '');
+	if (remaining.length <= maxWidth) return remaining ? [remaining] : [];
 
-	for (const word of words) {
-		if ((currentLine + (currentLine ? ' ' : '') + word).length <= maxWidth) {
-			currentLine += (currentLine ? ' ' : '') + word;
-			continue;
-		}
-		if (currentLine) {
-			lines.push(currentLine);
-			currentLine = '';
-		}
-		// A single word can be wider than the slip (an unbroken organisation name),
-		// so break it here instead of handing an oversized line to the aligners.
-		let rest = word;
-		while (rest.length > maxWidth) {
-			lines.push(rest.slice(0, maxWidth));
-			rest = rest.slice(maxWidth);
-		}
-		currentLine = rest;
-	}
-	if (currentLine) lines.push(currentLine);
-	return lines;
+	const lastSpaceThatFits = remaining.lastIndexOf(' ', maxWidth);
+	const cutAt = lastSpaceThatFits > 0 ? lastSpaceThatFits : maxWidth;
+
+	return [remaining.slice(0, cutAt), ...wrapText(remaining.slice(cutAt), maxWidth)];
 };
 
 export const printFormat = (printObj: any, type: string, printWidth: number) => {
