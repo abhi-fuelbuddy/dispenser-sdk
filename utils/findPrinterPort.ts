@@ -6,12 +6,13 @@ const debugLog = debug('dispenser:find-printer-port');
 export const hardwareId = '0403';
 export const attributeId = '6001';
 
-// Function to find port based on hardware ID and attribute ID
-export async function findPrinterPort(hardwareId: string, attributeId: string) {
+// excludePath: the dispenser's own port. Neogi and the TMU220B printer are both FTDI 0403:6001,
+// so without this the first match is the port the dispenser already holds.
+export async function findPrinterPort(hardwareId: string, attributeId: string, excludePath?: string) {
 	try {
 		debugLog(`Finding printer port with hardware ID: ${hardwareId}, and attribute ID: ${attributeId}: %o`, arguments);
 		const foundPort = (await SerialPort.list()).find((port) => {
-			return port.vendorId === hardwareId && port.productId === attributeId;
+			return port.vendorId === hardwareId && port.productId === attributeId && port.path !== excludePath;
 		});
 
 		if (foundPort) {

@@ -1,6 +1,10 @@
 import debug from 'debug';
+import { AutoDetectTypes } from '@serialport/bindings-cpp';
+import { SerialPort } from 'serialport';
 import { BaseDispenser } from './base/BaseDispenser';
-import { TotalizerResponse } from './interface/IDispenser';
+import { DispenserOptions, TotalizerResponse } from './interface/IDispenser';
+import { FULL_CUT, LF, buildSlip } from '../utils/printFormat';
+import { writeToPrinter } from '../utils/writeToPrinter';
 
 const debugLog = debug('dispenser:Neogi');
 
@@ -16,6 +20,15 @@ export class Neogi extends BaseDispenser {
 	private readonly cmd_switchToRemote = Buffer.from('DM\r', 'ascii');
 	private readonly cmd_switchToLocal = Buffer.from('AM\r', 'ascii');
 	private readonly nozzleStatusScript = 'scripts/Neogi/check_status.sh';
+
+	// Optional: Neogi trucks provisioned before printer support have no printer in their env,
+	// and must keep dispensing. isPrinterAvailable() reports what this truck actually has.
+	printer?: SerialPort<AutoDetectTypes>;
+
+	constructor(socket: SerialPort, printer: SerialPort | undefined, options: DispenserOptions) {
+		super(socket, options);
+		this.printer = printer;
+	}
 
 	/**
 	 * Calculate checksum for Neogi protocol
@@ -362,8 +375,32 @@ export class Neogi extends BaseDispenser {
 	}
 
 	isPrinterAvailable(): boolean {
-		debugLog('isPrinterAvailable: false');
-		return false;
+		const available = !!this.printer;
+		debugLog('isPrinterAvailable: %s', available);
+		return available;
+	}
+
+	printReceipt(printObj: any) {
+		debugLog('printReceipt: %o', printObj);
+
+		const recieptString = `${buildSlip(printObj).join(LF)}${FULL_CUT}`;
+		debugLog('printReceipt: %s', `${recieptString}`);
+		return this.printOrder(recieptString);
+	}
+
+	async printOrder(printText: string): Promise<boolean> {
+		if (!this.printer) {
+			debugLog('printOrder: no printer configured for this Neogi dispenser');
+			return false;
+		}
+
+		try {
+			await writeToPrinter(this.printer, Buffer.from(printText, 'hex'));
+			return true;
+		} catch (error) {
+			debugLog('printOrder failed: %O', error);
+			return false;
+		}
 	}
 
 	isSaleCloseable(res: string): boolean {
