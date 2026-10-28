@@ -59,7 +59,18 @@ export async function createDispenser(options: DispenserOptions): Promise<IDispe
 			const Neogi = await import('./dispenser/Neogi');
 			const neogiUsbPath = await findDispenserPort(hardwareId, attributeId);
 			debugLog('Dispenser found at: %o', neogiUsbPath);
-			return new Neogi.Neogi(new SerialPort({ path: neogiUsbPath, baudRate: baudRate }), options);
+			// Printer is optional: trucks provisioned before printer support have no printer in
+			// their env and must keep dispensing. Excluding neogiUsbPath stops the lookup picking
+			// the dispenser's own port when both are FTDI 0403:6001.
+			let neogiPrinterPort: SerialPort | undefined;
+			if (printer) {
+				const neogiPrinterPath = await findPrinterPort(printer.hardwareId, printer.attributeId, neogiUsbPath);
+				debugLog('Printer found at: %o', neogiPrinterPath);
+				neogiPrinterPort = new SerialPort({ path: neogiPrinterPath, baudRate: printer.baudRate || 9600, xon: true });
+			} else {
+				debugLog('No printer configured for Neogi dispenser, receipt printing disabled');
+			}
+			return new Neogi.Neogi(new SerialPort({ path: neogiUsbPath, baudRate: baudRate }), neogiPrinterPort, options);
 		default:
 			throw new Error('Invalid dispenser type');
 	}
