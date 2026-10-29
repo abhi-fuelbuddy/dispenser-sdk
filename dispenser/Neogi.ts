@@ -264,8 +264,12 @@ export class Neogi extends BaseDispenser {
 		return returnObj;
 	}
 
-	processCommand(res: string): boolean {
+	processCommand(res: string | boolean): boolean {
 		debugLog('processCommand - res: %s', res);
+
+		// printReceipt resolves to a boolean rather than a serial frame, and callers still bind
+		// this as its processing function, which made startsWith throw. GateX tolerates the same.
+		if (typeof res === 'boolean') return res;
 
 		// Convert to ASCII if hex
 		const ascii = res.startsWith('#') ? res : this.hex2a(res);
