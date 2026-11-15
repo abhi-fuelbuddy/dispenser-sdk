@@ -20,6 +20,8 @@ export class Neogi extends BaseDispenser {
 	private readonly cmd_switchToRemote = Buffer.from('DM\r', 'ascii');
 	private readonly cmd_switchToLocal = Buffer.from('AM\r', 'ascii');
 	private readonly nozzleStatusScript = 'scripts/Neogi/check_status.sh';
+	private readonly nozzleLiftScript = 'scripts/Neogi/lift_nozzle.sh';
+	private readonly nozzleRestScript = 'scripts/Neogi/rest_nozzle.sh';
 
 	// Optional: Neogi trucks provisioned before printer support have no printer in their env,
 	// and must keep dispensing. isPrinterAvailable() reports what this truck actually has.
@@ -172,6 +174,20 @@ export class Neogi extends BaseDispenser {
 	async isNozzleOffHook() {
 		debugLog('isNozzleOffHook');
 		return (await this.executeShellScriptAndCheck(this.nozzleStatusScript)) ? 'false' : 'true';
+	}
+
+	// Drive the sense line the physical nozzle switch used to hold, for trucks where that
+	// switch has been removed. Both scripts put pin 26 in output mode, so they must never
+	// run on a truck that still reads the switch: check_status.sh sets the same pin back to
+	// input and drops the drive. IDEV-3452.
+	async liftNozzle() {
+		debugLog('liftNozzle');
+		return (await this.executeShellScriptAndCheck(this.nozzleLiftScript)) ? 'true' : 'false';
+	}
+
+	async restNozzle() {
+		debugLog('restNozzle');
+		return (await this.executeShellScriptAndCheck(this.nozzleRestScript)) ? 'true' : 'false';
 	}
 
 	// this command takes care of authorization as well
