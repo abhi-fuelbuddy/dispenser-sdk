@@ -4,15 +4,15 @@ set -e
 
 nozzlePin=${VITE_MAIN_DISPENSER_AUTHORIZATION_PIN:-26}
 
-# 0 V is what the motherboard reads as a lifted nozzle, same level the physical switch gave
-# when lifted. Driving high here would register the nozzle as resting instead.
-pinctrl set ${nozzlePin} op dl
+# Driving the sense line high is what lets the dispenser deliver fuel, the state the
+# physical nozzle switch used to report when the driver lifted it.
+pinctrl set ${nozzlePin} op dh
 
 # Run the command and capture its output
 pin_state=$(pinctrl get ${nozzlePin})
 
-# Check if the pin state contains "lo"
-if [[ $pin_state == *"lo"* ]]; then
+# Check if the pin state contains "hi"
+if [[ $pin_state == *"hi"* ]]; then
     echo "true"
 else
     echo "false"
