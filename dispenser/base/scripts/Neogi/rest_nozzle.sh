@@ -4,14 +4,15 @@ set -e
 
 nozzlePin=${VITE_MAIN_DISPENSER_AUTHORIZATION_PIN:-26}
 
-# 3.3 V is what the motherboard reads as a nozzle at home position.
-pinctrl set ${nozzlePin} op dh
+# Driving the sense line low stops delivery, the state the switch reported with the
+# nozzle back on its hook.
+pinctrl set ${nozzlePin} op dl
 
 # Run the command and capture its output
 pin_state=$(pinctrl get ${nozzlePin})
 
-# Check if the pin state contains "hi"
-if [[ $pin_state == *"hi"* ]]; then
+# Check if the pin state contains "lo"
+if [[ $pin_state == *"lo"* ]]; then
     echo "true"
 else
     echo "false"
